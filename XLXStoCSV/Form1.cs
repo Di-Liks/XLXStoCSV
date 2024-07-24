@@ -13,6 +13,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Numerics;
 using System.Globalization;
+using Microsoft.VisualBasic.Devices;
 
 namespace XLXStoCSV
 {
@@ -182,7 +183,6 @@ namespace XLXStoCSV
 
                     List<string> adressList = new List<string>();
 
-
                     if (address.StartsWith("нас –")) continue;
                     address = address.Replace("\t", "");
                     if (address == "\"\"") continue;
@@ -195,7 +195,13 @@ namespace XLXStoCSV
                         if (string.IsNullOrWhiteSpace(trimmedAddres)) continue;
 
                         trimmedAddres = trimmedAddres.TrimEnd('.');
+                        if (trimmedAddres.EndsWith("переулка"))
+                        {
+                            var matches = Regex.Matches(trimmedAddres, " переулка", RegexOptions.Compiled);
+                            var lastMatch = matches.Cast<Match>().Last();
+                            trimmedAddres = trimmedAddres.Remove(lastMatch.Index, lastMatch.Length);
 
+                        }
                         string type = GetPlaceType(trimmedAddres);
                         string combinedKey;
 
@@ -220,7 +226,12 @@ namespace XLXStoCSV
                             trimmedAddres = trimmedAddres.Replace("Второго переулка ", "");
                             combinedKey = $"{town}-{type}{trimmedAddres}";
                         }
-                        else if (Regex.IsMatch(trimmedAddres, @"\bпервого\b|\bвторого\b|\bтретьего\b|\bчетвертого\b|\bпятого\b|\bшестого\b|\bседьмого\b|\bвосьмого\b|\bдевятого\b|\bдесятого\b"))
+                        else if (trimmedAddres.StartsWith("Первого переулка"))
+                        {
+                            trimmedAddres = trimmedAddres.Replace("Первого переулка ", "");
+                            combinedKey = $"{town}-{type}{trimmedAddres}";
+                        }
+                        else if (Regex.IsMatch(trimmedAddres, @"\bПервого\b|\bпервого\b|\bвторого\b|\bтретьего\b|\bчетвертого\b|\bпятого\b|\bшестого\b|\bседьмого\b|\bвосьмого\b|\bдевятого\b|\bдесятого\b"))
                         {
                             if (Regex.IsMatch(trimmedAddres, @"\bпервого\b\s+проезда"))
                             {
@@ -322,8 +333,10 @@ namespace XLXStoCSV
                                 trimmedAddres = trimmedAddres.Replace("Десятого переулка ", "");
                                 trimmedAddres = trimmedAddres.Replace("десятого переулка ", "");
                             }
-                            else if(trimmedAddres.EndsWith("первого")|| trimmedAddres.EndsWith("второго")|| trimmedAddres.EndsWith("третьего") || trimmedAddres.EndsWith("четвертого") || trimmedAddres.EndsWith("пятого"))
+                            else if(trimmedAddres.EndsWith("первого")|| trimmedAddres.EndsWith("второго")|| trimmedAddres.EndsWith("третьего") || trimmedAddres.EndsWith("четвертого") || trimmedAddres.EndsWith("пятого")||
+                                trimmedAddres.EndsWith("Первого") || trimmedAddres.EndsWith("Второго") || trimmedAddres.EndsWith("Третьего") || trimmedAddres.EndsWith("Четвертого") || trimmedAddres.EndsWith("Пятого"))
                             {
+                                if (trimmedAddres.EndsWith("первого")|| trimmedAddres.EndsWith("Первого"))
                                 adressList.Add(trimmedAddres);
                                 continue;
                             }
@@ -333,12 +346,14 @@ namespace XLXStoCSV
                                 number[0] = number[0].Remove(number[0].Length - 3);
                                 var numAddres = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(number[0]);
                                 int n=adressList.Count;
-                                string keyword = "проездов";
-                                int index = trimmedAddres.IndexOf(keyword);
-                                string resultAddres = trimmedAddres.Substring(index+9);
+                                //string keyword = "проездов";
+                                //int index = trimmedAddres.IndexOf(keyword);
+                                //string resultAddres = trimmedAddres.Substring(index+9);
+                                int index = trimmedAddres.IndexOf(number[1]);
+                                string resultAddres = trimmedAddres.Substring(index + 9);
                                 for (int i = 0; i < n; i++)
                                 {
-                                    if (adressList[i] == "первого")
+                                    if (adressList[i] == "первого"|| adressList[i] == "Первого")
                                     {
                                         trimmedAddres = "Первый проезд " + resultAddres;
                                         combinedKey = $"{town}-{type}{trimmedAddres}";
@@ -355,7 +370,7 @@ namespace XLXStoCSV
                                             combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
                                         }
                                     }
-                                    if (adressList[i] == "второго")
+                                    if (adressList[i] == "второго"|| adressList[i] == "Второго")
                                     {
                                         trimmedAddres = "Второй проезд " + resultAddres;
                                         combinedKey = $"{town}-{type}{trimmedAddres}";
@@ -372,7 +387,7 @@ namespace XLXStoCSV
                                             combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
                                         }
                                     }
-                                    if (adressList[i] == "третьего")
+                                    if (adressList[i] == "третьего" || adressList[i] == "Третьего")
                                     {
                                         trimmedAddres = "Третий проезд " + resultAddres;
                                         combinedKey = $"{town}-{type}{trimmedAddres}";
@@ -389,7 +404,7 @@ namespace XLXStoCSV
                                             combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
                                         }
                                     }
-                                    if (adressList[i] == "четвертого")
+                                    if (adressList[i] == "четвертого" || adressList[i] == "Четвертого")
                                     {
                                         trimmedAddres = "Четверный проезд " + resultAddres;
                                         combinedKey = $"{town}-{type}{trimmedAddres}";
@@ -406,7 +421,7 @@ namespace XLXStoCSV
                                             combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
                                         }
                                     }
-                                    if (adressList[i] == "пятого")
+                                    if (adressList[i] == "пятого" || adressList[i] == "Пятого")
                                     {
                                         trimmedAddres = "Пятый проезд " + resultAddres;
                                         combinedKey = $"{town}-{type}{trimmedAddres}";
@@ -426,7 +441,107 @@ namespace XLXStoCSV
                                 }
                                 trimmedAddres = numAddres + "ый проезд " + resultAddres;
                                 combinedKey = $"{town}-{type}{trimmedAddres}";
-                                //combinedKey = $"{town}-{type}{trimmedAddres}";
+                                adressList.Clear();
+                            }
+                            else if (Regex.IsMatch(trimmedAddres, @"Кавказсского"))
+                            {
+                                string[] number = trimmedAddres.Split(' ');
+                                number[0] = number[0].Remove(number[0].Length - 3);
+                                var numAddres = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(number[0]);
+                                int n = adressList.Count;
+                                int index = trimmedAddres.IndexOf(number[1]);
+                                string resultAddres = trimmedAddres.Substring(index + 9);
+                                for (int i = 0; i < n; i++)
+                                {
+                                    if (adressList[i] == "первого" || adressList[i] == "Первого")
+                                    {
+                                        trimmedAddres = "Первый переулок " + resultAddres;
+                                        combinedKey = $"{town}-{type}{trimmedAddres}";
+                                        if (combinedData.ContainsKey(combinedKey))
+                                        {
+                                            combinedData[combinedKey] = (
+                                                combinedData[combinedKey].count + 1,
+                                                combinedData[combinedKey].totalDuration + dateDifferenceHours,
+                                                combinedData[combinedKey].datesList.Append(datestr).ToList()
+                                            );
+                                        }
+                                        else
+                                        {
+                                            combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
+                                        }
+                                    }
+                                    if (adressList[i] == "второго" || adressList[i] == "Второго")
+                                    {
+                                        trimmedAddres = "Второй переулок " + resultAddres;
+                                        combinedKey = $"{town}-{type}{trimmedAddres}";
+                                        if (combinedData.ContainsKey(combinedKey))
+                                        {
+                                            combinedData[combinedKey] = (
+                                                combinedData[combinedKey].count + 1,
+                                                combinedData[combinedKey].totalDuration + dateDifferenceHours,
+                                                combinedData[combinedKey].datesList.Append(datestr).ToList()
+                                            );
+                                        }
+                                        else
+                                        {
+                                            combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
+                                        }
+                                    }
+                                    if (adressList[i] == "третьего" || adressList[i] == "Третьего")
+                                    {
+                                        trimmedAddres = "Третий переулок " + resultAddres;
+                                        combinedKey = $"{town}-{type}{trimmedAddres}";
+                                        if (combinedData.ContainsKey(combinedKey))
+                                        {
+                                            combinedData[combinedKey] = (
+                                                combinedData[combinedKey].count + 1,
+                                                combinedData[combinedKey].totalDuration + dateDifferenceHours,
+                                                combinedData[combinedKey].datesList.Append(datestr).ToList()
+                                            );
+                                        }
+                                        else
+                                        {
+                                            combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
+                                        }
+                                    }
+                                    if (adressList[i] == "четвертого" || adressList[i] == "Четвертого")
+                                    {
+                                        trimmedAddres = "Четверный переулок " + resultAddres;
+                                        combinedKey = $"{town}-{type}{trimmedAddres}";
+                                        if (combinedData.ContainsKey(combinedKey))
+                                        {
+                                            combinedData[combinedKey] = (
+                                                combinedData[combinedKey].count + 1,
+                                                combinedData[combinedKey].totalDuration + dateDifferenceHours,
+                                                combinedData[combinedKey].datesList.Append(datestr).ToList()
+                                            );
+                                        }
+                                        else
+                                        {
+                                            combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
+                                        }
+                                    }
+                                    if (adressList[i] == "пятого" || adressList[i] == "Пятого")
+                                    {
+                                        trimmedAddres = "Пятый переулок " + resultAddres;
+                                        combinedKey = $"{town}-{type}{trimmedAddres}";
+                                        if (combinedData.ContainsKey(combinedKey))
+                                        {
+                                            combinedData[combinedKey] = (
+                                                combinedData[combinedKey].count + 1,
+                                                combinedData[combinedKey].totalDuration + dateDifferenceHours,
+                                                combinedData[combinedKey].datesList.Append(datestr).ToList()
+                                            );
+                                        }
+                                        else
+                                        {
+                                            combinedData[combinedKey] = (1, dateDifferenceHours, new List<string> { datestr });
+                                        }
+                                    }
+                                }
+                                trimmedAddres = numAddres + "ый переулок " + resultAddres;
+                                combinedKey = $"{town}-{type}{trimmedAddres}";
+                                adressList.Clear();
                             }
                             combinedKey = $"{town}-{type}{trimmedAddres}";
                         }
@@ -496,9 +611,13 @@ namespace XLXStoCSV
             {
                 return "Проезд ";
             }
-            else if (Regex.IsMatch(place, @"\bпервого\b|\bвторого\b|\bтретьего\b|\bчетвертого\b|\bпятого\b|\bшестого\b|\bседьмого\b|\bвосьмого\b|\bдевятого\b|\bдесятого\b"))
+            else if (Regex.IsMatch(place, @"\bПервого\b|\bпервого\b|\bвторого\b|\bтретьего\b|\bчетвертого\b|\bпятого\b|\bшестого\b|\bседьмого\b|\bвосьмого\b|\bдевятого\b|\bдесятого\b"))
             {
                 if (Regex.IsMatch(place, @"\bпервого\b\s+проезда"))
+                    return "Первый проезд ";
+                else if (Regex.IsMatch(place, @"\bПервого\b\s+проезда"))
+                    return "Первый проезд ";
+                else if (Regex.IsMatch(place, @"\bПервого\b\s+переулка"))
                     return "Первый проезд ";
                 else if (Regex.IsMatch(place, @"\bвторого\b\s+проезда"))
                     return "Второй проезд ";
@@ -542,6 +661,8 @@ namespace XLXStoCSV
             }
             else if (place.StartsWith("Второго переулка"))
                 return "Второй переулок ";
+            else if (place.StartsWith("Первого переулка"))
+                return "Первый переулок ";
             else if (place.EndsWith("село") || place.EndsWith("Село"))
             {
                 return "";
